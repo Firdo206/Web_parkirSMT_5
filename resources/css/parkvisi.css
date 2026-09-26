@@ -1,0 +1,155 @@
+/* Font 'Sora' dimuat lewat bunny() di vite.config.js — lihat catatan setup.
+   Font 'Instrument Sans' sudah otomatis tersedia dari starter kit Laravel. */
+
+:root{
+    --navy:#0B1D33;
+    --navy-2:#132A47;
+    --cyan:#00C2A8;
+    --amber:#FFB100;
+    --paper:#F4F6F8;
+    --ink:#101820;
+    --muted:#5B6B7A;
+    --line:rgba(255,255,255,.12);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    font-family:'Instrument Sans',ui-sans-serif,system-ui,sans-serif;
+    color:var(--ink);
+    background:var(--paper);
+    line-height:1.55;
+  }
+  h1,h2,h3,.brand{font-family:'Sora',sans-serif;}
+  img,svg{max-width:100%;}
+  a{color:inherit;}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px;}
+
+  /* NAV */
+  header{
+    position:sticky;top:0;z-index:50;
+    background:rgba(11,29,51,.92);
+    backdrop-filter:blur(8px);
+  }
+  nav{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;max-width:1120px;margin:0 auto;}
+  .brand{color:#fff;font-weight:700;font-size:20px;display:flex;align-items:center;gap:10px;text-decoration:none;}
+  .brand-mark{width:28px;height:28px;flex:none;}
+  .nav-links{display:flex;gap:32px;list-style:none;margin:0;padding:0;}
+  .nav-links a{color:#C9D4DE;text-decoration:none;font-size:14.5px;font-weight:500;}
+  .nav-links a:hover{color:#fff;}
+  .nav-cta{display:flex;gap:12px;align-items:center;}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:11px 22px;border-radius:8px;font-weight:600;font-size:14.5px;
+    text-decoration:none;border:1px solid transparent;cursor:pointer;
+    transition:transform .15s ease, background .15s ease;
+  }
+  .btn:hover{transform:translateY(-1px);}
+  .btn-amber{background:var(--amber);color:#1A1200;}
+  .btn-amber:hover{background:#ffc233;}
+  .btn-ghost{border-color:var(--line);color:#fff;}
+  .btn-ghost:hover{background:rgba(255,255,255,.08);}
+  .btn-dark{background:var(--navy);color:#fff;}
+  .btn-dark:hover{background:var(--navy-2);}
+  .menu-toggle{display:none;background:none;border:0;color:#fff;font-size:24px;cursor:pointer;}
+
+  /* HERO — foto background, ganti nama file di url() sesuai foto kamu */
+  .hero{
+    background:
+      linear-gradient(180deg, rgba(11,29,51,.85) 0%, rgba(11,29,51,.75) 55%, rgba(11,29,51,.92) 100%),
+      url('/images/hero-parkir.jpg') center/cover no-repeat;
+    color:#fff;position:relative;
+    padding:160px 0 96px;
+  }
+  .hero-content{max-width:640px;}
+  .eyebrow-line{
+    display:inline-flex;align-items:center;gap:10px;
+    color:var(--cyan);font-size:13.5px;font-weight:600;margin-bottom:18px;
+  }
+  .eyebrow-line .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 0 4px rgba(0,194,168,.2);}
+  .hero h1{
+    font-size:44px;line-height:1.14;font-weight:800;margin:0 0 20px;
+    max-width:560px;letter-spacing:-.01em;
+  }
+  .hero p.lead{
+    font-size:17px;color:#D7E0E8;max-width:480px;margin:0 0 32px;
+  }
+  .hero-actions{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:44px;}
+  .hero-stats{display:flex;gap:36px;padding-top:28px;border-top:1px solid var(--line);flex-wrap:wrap;}
+  .hero-stat b{display:block;font-size:24px;font-family:'Sora',sans-serif;}
+  .hero-stat span{font-size:13px;color:#C9D4DE;}
+
+  /* SECTION HEADER */
+  .section{padding:88px 0;}
+  .section-head{max-width:600px;margin:0 0 48px;}
+  .section-head .tag{color:var(--cyan);font-weight:600;font-size:13.5px;margin-bottom:10px;display:block;}
+  .section-head h2{font-size:32px;line-height:1.2;margin:0 0 14px;color:var(--navy);}
+  .section-head p{color:var(--muted);font-size:16px;margin:0;}
+  .on-dark .section-head h2{color:#fff;}
+  .on-dark .section-head p{color:#AFC0CE;}
+
+  /* HOW IT WORKS */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;counter-reset:step;}
+  .step{
+    background:#fff;border:1px solid #E4E9EE;border-radius:14px;padding:28px;
+    position:relative;
+  }
+  .step .num{
+    font-family:'Sora',sans-serif;font-weight:800;font-size:14px;color:var(--cyan);
+    background:rgba(0,194,168,.1);width:32px;height:32px;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;margin-bottom:18px;
+  }
+  .step h3{font-size:18px;margin:0 0 8px;color:var(--navy);}
+  .step p{font-size:14.5px;color:var(--muted);margin:0;}
+
+  /* SPLIT FEATURES */
+  .split{background:var(--navy);color:#fff;}
+  .split-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  .panel{
+    border:1px solid var(--line);border-radius:16px;padding:32px;
+    background:rgba(255,255,255,.03);
+  }
+  .panel h3{font-size:20px;margin:0 0 6px;}
+  .panel .sub{color:var(--cyan);font-size:13px;font-weight:600;margin-bottom:18px;display:block;}
+  .panel ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px;}
+  .panel li{display:flex;gap:12px;font-size:14.5px;color:#C9D4DE;}
+  .panel li svg{flex:none;margin-top:2px;color:var(--cyan);}
+
+  /* TRUST / STATS BAND */
+  .band{background:#fff;border-top:1px solid #E4E9EE;border-bottom:1px solid #E4E9EE;}
+  .band-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding:44px 0;text-align:center;}
+  .band-grid b{display:block;font-family:'Sora',sans-serif;font-size:28px;color:var(--navy);}
+  .band-grid span{font-size:13.5px;color:var(--muted);}
+
+  /* CTA */
+  .cta{
+    background:linear-gradient(135deg,var(--navy) 0%,#0E2440 60%,var(--navy-2) 100%);
+    color:#fff;border-radius:22px;padding:56px;
+    display:flex;align-items:center;justify-content:space-between;gap:32px;
+    margin:0 24px;
+  }
+  .cta h2{font-size:28px;margin:0 0 10px;max-width:420px;}
+  .cta p{color:#B7C4D0;margin:0;max-width:380px;font-size:15px;}
+  .cta-actions{display:flex;gap:12px;flex:none;}
+
+  footer{background:var(--navy);color:#8DA0B0;padding:56px 0 28px;margin-top:88px;}
+  .foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:32px;padding-bottom:36px;border-bottom:1px solid var(--line);}
+  .foot-grid h4{color:#fff;font-size:14px;margin:0 0 16px;font-family:'Sora',sans-serif;}
+  .foot-grid ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;}
+  .foot-grid a{color:#8DA0B0;text-decoration:none;font-size:14px;}
+  .foot-grid a:hover{color:#fff;}
+  .foot-bottom{display:flex;justify-content:space-between;padding-top:24px;font-size:13px;flex-wrap:wrap;gap:12px;}
+
+  @media (max-width:860px){
+    .nav-links{display:none;}
+    .menu-toggle{display:block;}
+    .hero-grid{grid-template-columns:1fr;}
+    .gate-scene{height:300px;}
+    .hero h1{font-size:32px;}
+    .steps{grid-template-columns:1fr;}
+    .split-grid{grid-template-columns:1fr;}
+    .band-grid{grid-template-columns:repeat(2,1fr);}
+    .cta{flex-direction:column;text-align:center;padding:40px 24px;}
+    .cta-actions{flex-wrap:wrap;justify-content:center;}
+    .foot-grid{grid-template-columns:1fr 1fr;}
+  }
