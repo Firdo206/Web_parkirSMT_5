@@ -6,6 +6,7 @@
     <title>{{ $title ?? 'Dashboard' }} — ParkVisi Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>[x-cloak]{display:none !important;}</style>
 </head>
 <body class="bg-[#F4F6F8] font-['Instrument_Sans'] text-[#101820]">
 
@@ -38,13 +39,6 @@
                 Dashboard
             </a>
 
-            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/5 hover:text-white transition">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 4a4 4 0 100 8 4 4 0 000-8zM6 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/>
-                </svg>
-                Kendaraan Terdaftar
-            </a>
-
             <a href="{{ route('admin.paket-harga.index') }}"
                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition
                       {{ request()->routeIs('admin.paket-harga.*') ? 'bg-[#00C2A8]/15 text-[#00C2A8]' : 'text-white/70 hover:bg-white/5 hover:text-white' }}">
@@ -54,11 +48,11 @@
                 Paket Harga
             </a>
 
-            <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/5 hover:text-white transition">
+            <a href="{{ url('/') }}" target="_blank" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/5 hover:text-white transition">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 9v4l2 2M12 3a9 9 0 100 18 9 9 0 000-18z"/>
+                    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
                 </svg>
-                Riwayat Kejadian
+                Lihat Website
             </a>
 
             <p class="px-3 text-[11px] font-semibold uppercase tracking-wider text-white/40 mt-6 mb-2">Akun</p>

@@ -45,7 +45,7 @@
   <div class="wrap">
     <div class="section-head">
       <span class="tag">Cara kerja</span>
-      <h2>Tiga langkah, sekali daftar, berlaku di semua lokasi mitra</h2>
+      <h2>Tiga langkah, sekali daftar, langsung bisa dipakai setiap kali Anda datang</h2>
       <p>Pendaftaran dilakukan sekali lewat aplikasi mobile. Setelah itu, sistem yang bekerja setiap kali Anda datang.</p>
     </div>
     <div class="steps">
@@ -78,7 +78,7 @@
     <div class="split-grid">
       <div class="panel">
         <span class="sub">WEB ADMIN — untuk pengelola</span>
-        <h3>Kendalikan setiap lokasi dari satu dashboard</h3>
+        <h3>Kendalikan operasional parkir dari satu dashboard</h3>
         <ul>
           <li><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 9l3.5 3.5L14 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Pantau slot terisi dan kosong secara real-time per lantai</li>
           <li><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 9l3.5 3.5L14 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Kelola daftar wajah & plat nomor terdaftar, blokir bila perlu</li>
@@ -93,7 +93,7 @@
           <li><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 9l3.5 3.5L14 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Pendaftaran wajah & plat nomor dalam hitungan menit</li>
           <li><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 9l3.5 3.5L14 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Notifikasi saat masuk dan keluar area parkir</li>
           <li><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 9l3.5 3.5L14 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Pembayaran langsung dari saldo aplikasi</li>
-          <li><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 9l3.5 3.5L14 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Cari lokasi parkir mitra terdekat beserta sisa slot</li>
+          <li><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 9l3.5 3.5L14 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Lihat sisa slot parkir yang tersedia secara real-time</li>
         </ul>
       </div>
     </div>
@@ -217,9 +217,9 @@
 
 <div class="band">
   <div class="wrap band-grid">
-    <div><b>120+</b><span>lokasi mitra komersial</span></div>
+    <div><b>500+</b><span>slot parkir tersedia</span></div>
     <div><b>99,2%</b><span>akurasi pencocokan wajah & plat</span></div>
-    <div><b>45rb+</b><span>kendaraan terdaftar</span></div>
+    <div><b>850+</b><span>kendaraan terdaftar</span></div>
     <div><b>&lt;2 dtk</b><span>waktu buka palang otomatis</span></div>
   </div>
 </div>
@@ -228,8 +228,8 @@
   <div class="wrap">
     <div class="cta">
       <div>
-        <h2>Kelola parkir lokasi Anda, atau daftarkan kendaraan Anda hari ini.</h2>
-        <p>Pengelola gedung bisa mulai dari dashboard admin. Pengguna kendaraan cukup unduh aplikasinya.</p>
+        <h2>Kelola parkir Anda, atau daftarkan kendaraan Anda hari ini.</h2>
+        <p>Pengelola bisa mulai dari dashboard admin. Pengguna kendaraan cukup unduh aplikasinya.</p>
       </div>
       <div class="cta-actions">
         <a href="{{ route('login') }}" class="btn btn-amber">Coba Dashboard Admin</a>
@@ -262,7 +262,6 @@
         <h4>Perusahaan</h4>
         <ul>
           <li><a href="#">Tentang Kami</a></li>
-          <li><a href="#lokasi">Lokasi Mitra</a></li>
           <li><a href="#">Karier</a></li>
         </ul>
       </div>
