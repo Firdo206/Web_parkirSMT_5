@@ -52,9 +52,10 @@ Route::middleware(['auth', 'role:admin_parkir'])
         Route::get('/', [ParkirDashboardController::class, 'index'])->name('dashboard');
 
         Route::get('/pendaftaran', [PendaftaranController::class, 'index'])->name('pendaftaran');
+        Route::post('/pendaftaran', [PendaftaranController::class, 'store'])->name('pendaftaran.store');
+
         Route::get('/pelanggan', [PelangganController::class, 'index'])->name('pelanggan');
         Route::get('/darurat', [DaruratController::class, 'index'])->name('darurat');
-        // nanti: members, kendaraan, wajah, log akses, palang manual
     });
 
 // Superadmin: kelola akun admin
