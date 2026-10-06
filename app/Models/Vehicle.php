@@ -12,4 +12,8 @@ class Vehicle extends Model
     {
         return $this->belongsTo(Member::class);
     }
+    public function parkingSessions()
+    {
+    return $this->hasMany(ParkingSession::class);
+    }
 }

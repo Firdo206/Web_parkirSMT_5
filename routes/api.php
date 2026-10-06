@@ -9,3 +9,5 @@ Route::get('/parking/command',[ParkingGateController::class,'command']);
 Route::post('/parking/reset',[ParkingGateController::class,'reset']);
 Route::get('/parking/verification-status',[ParkingGateController::class,'verificationStatus']);
 Route::post('/parking/detect-access',[AccessController::class,'detect']);
+Route::post('/parking/face-result',[ParkingGateController::class,'faceResult']);
+Route::post('/parking/plate-result',[ParkingGateController::class,'plateResult']);

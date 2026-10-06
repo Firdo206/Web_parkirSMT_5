@@ -34,4 +34,8 @@ class Member extends Model
     {
         return $this->hasMany(MemberSubscription::class);
     }
+    public function parkingSessions()
+    {
+    return $this->hasMany(ParkingSession::class);
+    }
 }
