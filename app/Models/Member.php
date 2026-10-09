@@ -30,4 +30,14 @@ class Member extends Model
     {
         return $this->hasMany(AccessRequest::class);
     }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(MemberSubscription::class);
+    }
+
+    public function parkingSessions()
+    {
+        return $this->hasMany(ParkingSession::class);
+    }
 }

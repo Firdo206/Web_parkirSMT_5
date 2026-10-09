@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccessController;
 use App\Http\Controllers\Admin\SubscriptionPlanController;
 use App\Http\Controllers\adminParkir\DaruratController;
 use App\Http\Controllers\adminParkir\DashboardController as ParkirDashboardController;
@@ -56,6 +57,18 @@ Route::middleware(['auth', 'role:admin_parkir'])
 
         Route::get('/pelanggan', [PelangganController::class, 'index'])->name('pelanggan');
         Route::get('/darurat', [DaruratController::class, 'index'])->name('darurat');
+
+        // Akses gerbang / deteksi plat
+        Route::get('/test-access', function () {
+            return view('admin_parkir.test_access');
+        })->name('test-access');
+
+        Route::get('/access', function () {
+            return view('admin_parkir.access');
+        })->name('access');
+
+        Route::post('/detect-access', [AccessController::class, 'detect'])->name('detect-access');
+        Route::post('/verify-access', [AccessController::class, 'verifyAccess'])->name('verify-access');
     });
 
 // Superadmin: kelola akun admin

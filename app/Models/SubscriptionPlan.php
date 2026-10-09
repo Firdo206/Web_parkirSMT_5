@@ -24,13 +24,14 @@ class SubscriptionPlan extends Model
     ];
 
     protected $casts = [
-        'price_motor'  => 'decimal:2',
-        'price_mobil'  => 'decimal:2',
-        'is_popular'   => 'boolean',
-        'is_active'    => 'boolean',
+        'price_motor' => 'decimal:2',
+        'price_mobil' => 'decimal:2',
+        'features'    => 'array',
+        'is_popular'  => 'boolean',
+        'is_active'   => 'boolean',
     ];
 
-    // Slug otomatis dibuat dari nama tiap kali disimpan
+    // Slug otomatis dibuat dari nama kalau masih kosong
     protected static function booted(): void
     {
         static::saving(function (SubscriptionPlan $plan) {
@@ -40,7 +41,7 @@ class SubscriptionPlan extends Model
         });
     }
 
-    // Helper buat nampilin label durasi, misal "30 hari" atau "1 Tahun"
+    // Label durasi, misal "1 Bulan" atau "45 hari"
     public function getDurationLabelAttribute(): string
     {
         return match (true) {
@@ -51,15 +52,30 @@ class SubscriptionPlan extends Model
         };
     }
 
-    // Pecah isi kolom `features` (satu baris per fitur) jadi array bersih
+    // Daftar fitur sebagai array bersih.
+    // Mendukung 2 format: array/JSON (versi baru) dan teks satu baris per fitur (versi lama).
     public function getFeaturesListAttribute(): array
     {
-        if (empty($this->features)) {
+        $raw = $this->attributes['features'] ?? null;
+
+        if (empty($raw)) {
             return [];
         }
 
-        return collect(explode("\n", $this->features))
-            ->map(fn ($line) => trim($line))
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+
+            if (is_array($decoded)) {
+                $raw = $decoded;
+            } elseif (is_string($decoded)) {
+                $raw = $decoded;
+            }
+        }
+
+        $lines = is_array($raw) ? $raw : explode("\n", (string) $raw);
+
+        return collect($lines)
+            ->map(fn ($line) => trim((string) $line))
             ->filter()
             ->values()
             ->all();
@@ -72,6 +88,15 @@ class SubscriptionPlan extends Model
 
     public function scopeOrdered($query)
     {
-        return $query->orderBy('sort_order')->orderBy('duration_days');
+        return $query->orderBy('sort_order')
+            ->orderBy('duration_days');
+    }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(
+            MemberSubscription::class,
+            'subscription_plan_id'
+        );
     }
 }
