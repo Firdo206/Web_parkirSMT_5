@@ -5,6 +5,30 @@
 @section('subheading', 'Daftarkan member baru beserta plat nomor dan wajah')
 
 @section('content')
+
+{{-- ================= HASIL: tampil sekali setelah member berhasil disimpan ================= --}}
+@if (session('created'))
+    @php $c = session('created'); @endphp
+    <div class="pd-cred" role="status">
+        <div class="pd-cred-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 9.8"/></svg>
+            <div>
+                <strong>Member berhasil didaftarkan</strong>
+                <span>{{ $c['name'] }} &middot; {{ implode(', ', $c['vehicles']) }}</span>
+            </div>
+        </div>
+
+        <div class="pd-cred-grid">
+            <div><small>Login aplikasi (No. HP)</small><b>{{ $c['phone'] }}</b></div>
+            <div><small>Kata sandi sementara</small><b class="pd-cred-pass">{{ $c['password'] }}</b></div>
+            <button type="button" class="pd-cred-copy" id="pdCredCopy"
+                    data-copy="No. HP: {{ $c['phone'] }}&#10;Kata sandi sementara: {{ $c['password'] }}">Salin</button>
+        </div>
+
+        <p>Kata sandi ini hanya tampil sekali. Berikan ke member; ia akan diminta menggantinya saat pertama kali masuk ke aplikasi.</p>
+    </div>
+@endif
+
 <style>
     .pd{
         --pd-line: var(--line, #e3e7ec);
@@ -15,6 +39,21 @@
         --pd-radius: 14px;
     }
     .pd *{box-sizing:border-box}
+
+    /* ---------- Kartu hasil (kata sandi sementara) ---------- */
+    .pd-cred{margin:0 0 20px;padding:20px 24px;border-radius:14px;background:#effaf5;border:1px solid #bfe8d4}
+    .pd-cred-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+    .pd-cred-head svg{width:30px;height:30px;flex:none;stroke:#15803d}
+    .pd-cred-head strong{display:block;font-size:15px;color:#14532d}
+    .pd-cred-head span{font-size:13px;color:#3f6b52}
+    .pd-cred-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:14px;align-items:end}
+    @media (max-width:640px){.pd-cred-grid{grid-template-columns:1fr}}
+    .pd-cred-grid small{display:block;font-size:12px;color:#3f6b52;margin-bottom:4px}
+    .pd-cred-grid b{display:block;padding:10px 12px;border-radius:10px;background:#fff;border:1px solid #bfe8d4;font-size:16px;letter-spacing:.04em}
+    .pd-cred-pass{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .pd-cred-copy{height:42px;padding:0 18px;border-radius:10px;border:1px solid #15803d;background:#15803d;color:#fff;font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+    .pd-cred-copy:hover{filter:brightness(.94)}
+    .pd-cred p{margin:14px 0 0;font-size:12.5px;color:#3f6b52}
 
     /* ---------- Layout ---------- */
     .pd-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:24px;align-items:start}
@@ -27,6 +66,12 @@
     .pd-head{margin:0 0 18px}
     .pd-head h3{margin:0;font-size:16px;font-weight:700}
     .pd-head p{margin:4px 0 0;font-size:13px;color:var(--pd-muted)}
+
+    /* ---------- Info akun ---------- */
+    .pd-info{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+    .pd-info li{display:flex;gap:12px;font-size:13.5px;line-height:1.45}
+    .pd-info b{flex:none;width:130px;font-weight:600}
+    .pd-info span{color:var(--pd-muted)}
 
     /* ---------- Form fields ---------- */
     .pd-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -144,8 +189,8 @@
 
                 <div class="pd-row">
                     <div class="field">
-                        <label for="phone">No. HP</label>
-                        <input id="phone" name="phone" value="{{ old('phone') }}" inputmode="tel" autocomplete="off">
+                        <label for="phone">No. HP <span class="opt">(untuk login aplikasi)</span></label>
+                        <input id="phone" name="phone" value="{{ old('phone') }}" inputmode="tel" autocomplete="off" required>
                         @error('phone') <div class="err">{{ $message }}</div> @enderror
                     </div>
                     <div class="field">
@@ -176,6 +221,19 @@
                 <button type="button" class="pd-add" id="btnAddPlate">+ Tambah kendaraan</button>
                 @error('plates.*') <div class="err">{{ $message }}</div> @enderror
                 @error('plates') <div class="err">{{ $message }}</div> @enderror
+            </section>
+
+            <section class="pd-panel">
+                <div class="pd-head">
+                    <h3>Akun aplikasi</h3>
+                    <p>Akun dibuat otomatis bersamaan dengan pendaftaran ini.</p>
+                </div>
+
+                <ul class="pd-info">
+                    <li><b>Login</b><span>Memakai No. HP yang diisi di atas</span></li>
+                    <li><b>Kata sandi</b><span>Dibuat otomatis dan tampil sekali setelah disimpan</span></li>
+                    <li><b>Masuk pertama kali</b><span>Member diminta mengganti kata sandi</span></li>
+                </ul>
             </section>
         </div>
 
@@ -240,6 +298,17 @@
 
 <script>
 (function () {
+    // ================= Tombol salin kata sandi (hanya ada setelah member berhasil disimpan) =================
+    const credCopy = document.getElementById('pdCredCopy');
+    if (credCopy) {
+        credCopy.addEventListener('click', () => {
+            navigator.clipboard.writeText(credCopy.dataset.copy).then(() => {
+                credCopy.textContent = 'Tersalin';
+                setTimeout(() => { credCopy.textContent = 'Salin'; }, 1500);
+            });
+        });
+    }
+
     // ================= Plat nomor =================
     const plateList = document.getElementById('plateList');
 
@@ -413,6 +482,10 @@
         const firstPlate = plateList.querySelector('input');
         if (!document.getElementById('name').value.trim()) {
             e.preventDefault(); document.getElementById('name').focus(); return;
+        }
+        const phone = document.getElementById('phone');
+        if (!phone.value.trim()) {
+            e.preventDefault(); phone.focus(); return;
         }
         if (!firstPlate.value.trim()) {
             e.preventDefault(); firstPlate.focus(); return;
