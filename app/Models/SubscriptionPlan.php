@@ -10,18 +10,16 @@ class SubscriptionPlan extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'name',
-        'slug',
-        'duration_days',
-        'price_motor',
-        'price_mobil',
-        'description',
-        'features',
-        'is_popular',
-        'is_active',
-        'sort_order',
-    ];
+    protected $fillable = 
+    ['name', 
+    'slug', 
+    'duration_days', 
+    'price_motor', 
+    'price_mobil', 
+    'description', 
+    'is_popular', 
+    'is_active', 
+    'sort_order'];
 
     protected $casts = [
         'price_motor' => 'decimal:2',

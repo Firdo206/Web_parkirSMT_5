@@ -5,8 +5,10 @@ namespace App\Http\Controllers\adminParkir;
 use App\Http\Controllers\Controller;
 use App\Models\FaceProfile;
 use App\Models\Member;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -66,6 +68,46 @@ class PelangganController extends Controller
             'phone' => $member->phone,
             'password' => self::DEFAULT_PASSWORD,
         ]);
+    }
+
+    public function toggleStatus(Member $member): RedirectResponse
+    {
+        $member->is_active = ! $member->is_active;
+        $member->save();
+
+        return back()->with('success', $member->is_active
+            ? "{$member->name} diaktifkan kembali."
+            : "{$member->name} dinonaktifkan.");
+    }
+
+    public function destroy(Member $member): RedirectResponse
+    {
+        // Riwayat langganan harus tetap ada (catatan pembayaran), jadi cukup dinonaktifkan
+        if ($member->latestSubscription()->exists()) {
+            return back()->with('error', "{$member->name} punya riwayat langganan sehingga tidak bisa dihapus. Nonaktifkan saja.");
+        }
+
+        $photoPath = $member->faceProfile?->photo_path;
+
+        try {
+            DB::transaction(function () use ($member) {
+                $member->vehicles()->delete();
+                $member->faceProfile()->delete();
+                $member->delete();
+            });
+        } catch (QueryException $e) {
+            report($e);
+
+            return back()->with('error', "{$member->name} tidak bisa dihapus karena masih terkait data lain. Nonaktifkan saja.");
+        }
+
+        // File foto dihapus setelah database berhasil; coba kedua disk karena member lama mungkin di 'public'
+        if ($photoPath) {
+            Storage::disk('local')->delete($photoPath);
+            Storage::disk('public')->delete($photoPath);
+        }
+
+        return back()->with('success', "Pelanggan {$member->name} dihapus beserta kendaraan dan foto wajahnya.");
     }
 
     /** Foto wajah ada di disk privat, jadi disajikan lewat route ini (hanya untuk yang sudah login). */

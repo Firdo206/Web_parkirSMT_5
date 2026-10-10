@@ -87,6 +87,7 @@
             <div class="label">Data</div>
             <a href="{{ route('parkir.pendaftaran') }}" class="{{ request()->routeIs('parkir.pendaftaran') ? 'active' : '' }}">Pendaftaran</a>
             <a href="{{ route('parkir.pelanggan') }}" class="{{ request()->routeIs('parkir.pelanggan') ? 'active' : '' }}">Data Pelanggan</a>
+            <a href="{{ route('parkir.paket.index') }}" class="{{ request()->routeIs('parkir.paket.*') ? 'active' : '' }}">Paket &amp; Harga</a>
             {{-- aktifkan satu per satu setelah route-nya dibuat --}}
             {{-- <a href="{{ route('parkir.vehicles.index') }}">Kendaraan & Plat</a> --}}
             {{-- <a href="{{ route('parkir.faces.index') }}">Wajah</a> --}}

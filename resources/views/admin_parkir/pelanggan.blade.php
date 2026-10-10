@@ -161,14 +161,35 @@
 
                             {{-- Aksi --}}
                             <td>
-                                <form method="POST"
-                                      action="{{ route('parkir.pelanggan.reset', $member) }}"
-                                      data-confirm="Reset kata sandi {{ $member->name }} menjadi 123456789? Kata sandi lamanya tidak berlaku lagi.">
-                                    @csrf
-                                    <button type="submit" class="btn btn-outline" style="padding:6px 12px;font-size:13px;white-space:nowrap">
-                                        Reset kata sandi
-                                    </button>
-                                </form>
+                                <div class="actions">
+                                    <form method="POST"
+                                          action="{{ route('parkir.pelanggan.reset', $member) }}"
+                                          data-confirm="Reset kata sandi {{ $member->name }} menjadi 123456789? Kata sandi lamanya tidak berlaku lagi.">
+                                        @csrf
+                                        <button type="submit" class="link l-key">Reset sandi</button>
+                                    </form>
+
+                                    <form method="POST"
+                                          action="{{ route('parkir.pelanggan.status', $member) }}"
+                                          data-confirm="{{ $member->is_active ? 'Nonaktifkan' : 'Aktifkan kembali' }} {{ $member->name }}?">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="link l-warn">
+                                            {{ $member->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
+                                        </button>
+                                    </form>
+
+                                    {{-- Pelanggan yang punya riwayat langganan tidak boleh dihapus, cukup dinonaktifkan --}}
+                                    @unless ($member->latestSubscription)
+                                        <form method="POST"
+                                              action="{{ route('parkir.pelanggan.destroy', $member) }}"
+                                              data-confirm="Hapus {{ $member->name }} beserta kendaraan dan foto wajahnya? Tindakan ini tidak bisa dibatalkan.">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="link l-del">Hapus</button>
+                                        </form>
+                                    @endunless
+                                </div>
                             </td>
                         </tr>
                     @empty

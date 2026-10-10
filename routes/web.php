@@ -8,6 +8,7 @@ use App\Http\Controllers\adminParkir\PelangganController;
 use App\Http\Controllers\adminParkir\PendaftaranController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SuperAdmin\AdminAccountController;
+use App\Http\Controllers\adminParkir\PaketController;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -58,7 +59,16 @@ Route::middleware(['auth', 'role:admin_parkir'])
         Route::get('/pelanggan', [PelangganController::class, 'index'])->name('pelanggan');
         Route::post('/pelanggan/{member}/reset-password', [PelangganController::class, 'resetPassword'])->name('pelanggan.reset');
         Route::get('/pelanggan/{member}/foto', [PelangganController::class, 'foto'])->name('pelanggan.foto');
+        Route::patch('/pelanggan/{member}/status', [PelangganController::class, 'toggleStatus'])->name('pelanggan.status');
+        Route::delete('/pelanggan/{member}', [PelangganController::class, 'destroy'])->name('pelanggan.destroy');
         Route::get('/darurat', [DaruratController::class, 'index'])->name('darurat');
+        Route::get('/paket', [PaketController::class, 'index'])->name('paket.index');
+        Route::get('/paket/tambah', [PaketController::class, 'create'])->name('paket.create');
+        Route::post('/paket', [PaketController::class, 'store'])->name('paket.store');
+        Route::get('/paket/{plan}/ubah', [PaketController::class, 'edit'])->name('paket.edit');
+        Route::put('/paket/{plan}', [PaketController::class, 'update'])->name('paket.update');
+        Route::patch('/paket/{plan}/status', [PaketController::class, 'toggle'])->name('paket.toggle');
+        Route::delete('/paket/{plan}', [PaketController::class, 'destroy'])->name('paket.destroy');
 
         // Akses gerbang / deteksi plat
         Route::get('/test-access', function () {

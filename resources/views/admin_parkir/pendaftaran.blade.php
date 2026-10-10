@@ -2,7 +2,7 @@
 
 @section('title', 'Pendaftaran Member')
 @section('heading', 'Pendaftaran Member')
-@section('subheading', 'Daftarkan member baru beserta plat nomor dan wajah')
+@section('subheading', 'Daftarkan member baru beserta plat nomor, wajah, dan paket langganan')
 
 @section('content')
 
@@ -17,6 +17,12 @@
                 <span>{{ $c['name'] }} &middot; {{ implode(', ', $c['vehicles']) }}</span>
             </div>
         </div>
+
+        @if (!empty($c['plan']))
+            <div class="pd-cred-plan">
+                Paket <b>{{ $c['plan'] }}</b> berlaku {{ $c['start'] ?? '-' }} sampai {{ $c['end'] ?? '-' }}.
+            </div>
+        @endif
 
         <div class="pd-cred-grid">
             <div><small>Login aplikasi (No. HP)</small><b>{{ $c['phone'] }}</b></div>
@@ -46,6 +52,7 @@
     .pd-cred-head svg{width:30px;height:30px;flex:none;stroke:#15803d}
     .pd-cred-head strong{display:block;font-size:15px;color:#14532d}
     .pd-cred-head span{font-size:13px;color:#3f6b52}
+    .pd-cred-plan{margin:-4px 0 16px;font-size:13.5px;color:#14532d}
     .pd-cred-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:14px;align-items:end}
     @media (max-width:640px){.pd-cred-grid{grid-template-columns:1fr}}
     .pd-cred-grid small{display:block;font-size:12px;color:#3f6b52;margin-bottom:4px}
@@ -80,8 +87,11 @@
     .pd .field:last-child{margin-bottom:0}
     .pd .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
     .pd .field .opt{font-weight:400;color:var(--pd-muted)}
+    .pd .field .hint{margin-top:6px;font-size:12px;color:var(--pd-muted)}
     .pd .field input[type=text],
     .pd .field input[type=email],
+    .pd .field input[type=date],
+    .pd .field input[type=number],
     .pd .field input:not([type]),
     .pd .field select,
     .pd-plate input,
@@ -89,7 +99,7 @@
         width:100%;height:42px;padding:0 12px;border:1px solid var(--pd-line);border-radius:10px;
         background:#fff;font:inherit;font-size:14px;color:inherit;transition:border-color .15s, box-shadow .15s
     }
-    .pd .field input:focus, .pd-plate input:focus, .pd-plate select:focus{
+    .pd .field input:focus, .pd .field select:focus, .pd-plate input:focus, .pd-plate select:focus{
         outline:none;border-color:var(--pd-accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--pd-accent) 18%, transparent)
     }
     .pd .err{color:var(--pd-red);font-size:12.5px;margin-top:6px}
@@ -109,6 +119,18 @@
         color:var(--pd-accent);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer
     }
     .pd-add:hover{text-decoration:underline}
+
+    /* ---------- Ringkasan paket ---------- */
+    .pd-sum{
+        display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:4px 0 16px;padding:14px 16px;border-radius:12px;
+        background:color-mix(in srgb, var(--pd-accent) 7%, #fff);border:1px solid color-mix(in srgb, var(--pd-accent) 22%, #fff)
+    }
+    @media (max-width:560px){.pd-sum{grid-template-columns:1fr}}
+    .pd-sum small{display:block;font-size:12px;color:var(--pd-muted);margin-bottom:3px}
+    .pd-sum b{font-size:15px}
+    .pd-sum .full{grid-column:1/-1}
+    .pd-sum span{font-size:13px;color:var(--pd-muted);line-height:1.5}
+    .pd-empty-plan{margin:0 0 14px;padding:10px 12px;border-radius:10px;background:#fff6e5;border:1px solid #f3dca8;font-size:12.5px;color:#7a5a12}
 
     /* ---------- Panggung foto ---------- */
     .pd-stage{
@@ -173,7 +195,7 @@
     @csrf
 
     <div class="pd-grid">
-        {{-- ================= KIRI: data member & kendaraan ================= --}}
+        {{-- ================= KIRI: data member, kendaraan, paket ================= --}}
         <div>
             <section class="pd-panel">
                 <div class="pd-head">
@@ -221,6 +243,67 @@
                 <button type="button" class="pd-add" id="btnAddPlate">+ Tambah kendaraan</button>
                 @error('plates.*') <div class="err">{{ $message }}</div> @enderror
                 @error('plates') <div class="err">{{ $message }}</div> @enderror
+            </section>
+
+            {{-- ================= PAKET LANGGANAN ================= --}}
+            <section class="pd-panel">
+                <div class="pd-head">
+                    <h3>Paket langganan</h3>
+                    <p>Member langsung aktif setelah data disimpan. Tagihan dihitung dari jenis tiap kendaraan.</p>
+                </div>
+
+                @if (empty($plans) || count($plans) === 0)
+                    <div class="pd-empty-plan">Belum ada paket aktif yang bisa dipilih. Tambahkan paket di data master terlebih dahulu.</div>
+                @endif
+
+                <div class="pd-row">
+                    <div class="field">
+                        <label for="plan_id">Paket</label>
+                        <select id="plan_id" name="plan_id" required>
+                            <option value="">Pilih paket</option>
+                            @foreach (($plans ?? []) as $plan)
+                                <option value="{{ $plan->id }}"
+                                    data-days="{{ $plan->duration_days }}"
+                                    data-motor="{{ (int) $plan->price_motor }}"
+                                    data-mobil="{{ (int) $plan->price_mobil }}"
+                                    {{ (string) old('plan_id') === (string) $plan->id ? 'selected' : '' }}>
+                                    {{ $plan->name }} &middot; {{ $plan->duration_days }} hari{{ $plan->is_popular ? ' (rekomendasi)' : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('plan_id') <div class="err">{{ $message }}</div> @enderror
+                    </div>
+
+                    <div class="field">
+                        <label for="start_date">Tanggal mulai</label>
+                        <input id="start_date" type="date" name="start_date" value="{{ old('start_date', now()->toDateString()) }}" required>
+                        @error('start_date') <div class="err">{{ $message }}</div> @enderror
+                    </div>
+                </div>
+
+                <div class="pd-sum" id="pdSum" aria-live="polite">
+                    <div><small>Masa berlaku</small><b id="sumRange">-</b></div>
+                    <div><small>Total tagihan</small><b id="sumTotal">-</b></div>
+                    <div class="full"><small>Rincian</small><span id="sumDetail">Pilih paket untuk melihat tagihan.</span></div>
+                </div>
+
+                <div class="pd-row">
+                    <div class="field">
+                        <label for="payment_method">Metode pembayaran</label>
+                        <select id="payment_method" name="payment_method">
+                            <option value="tunai" {{ old('payment_method', 'tunai') === 'tunai' ? 'selected' : '' }}>Tunai</option>
+                            <option value="transfer" {{ old('payment_method') === 'transfer' ? 'selected' : '' }}>Transfer</option>
+                        </select>
+                        @error('payment_method') <div class="err">{{ $message }}</div> @enderror
+                    </div>
+
+                    <div class="field">
+                        <label for="amount_paid">Nominal dibayar <span class="opt">(Rp)</span></label>
+                        <input id="amount_paid" type="number" name="amount_paid" min="0" step="1" inputmode="numeric" value="{{ old('amount_paid') }}">
+                        @error('amount_paid') <div class="err">{{ $message }}</div> @enderror
+                    </div>
+                </div>
+                <div class="field"><div class="hint">Nominal terisi otomatis sesuai total tagihan. Ubah kalau yang dibayar berbeda.</div></div>
             </section>
 
             <section class="pd-panel">
@@ -338,6 +421,64 @@
         btn.closest('.pd-plate').remove();
         syncDeleteButtons();
     });
+
+    // ================= Paket langganan =================
+    const planSel   = document.getElementById('plan_id');
+    const startIn   = document.getElementById('start_date');
+    const amountIn  = document.getElementById('amount_paid');
+    const sumRange  = document.getElementById('sumRange');
+    const sumTotal  = document.getElementById('sumTotal');
+    const sumDetail = document.getElementById('sumDetail');
+
+    // Kalau kolom nominal sudah berisi (misalnya setelah validasi gagal), jangan ditimpa otomatis.
+    let amountTouched = amountIn.value !== '';
+    amountIn.addEventListener('input', () => { amountTouched = true; });
+
+    const rupiah  = n => 'Rp ' + new Intl.NumberFormat('id-ID').format(n);
+    const tanggal = d => d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    function hitungPaket() {
+        const opt   = planSel.selectedOptions[0];
+        const hari  = Number(opt && opt.dataset.days  || 0);
+        const harga = { motor: Number(opt && opt.dataset.motor || 0), mobil: Number(opt && opt.dataset.mobil || 0) };
+
+        // Masa berlaku = mulai + durasi hari - 1 (hari terakhir ikut dihitung)
+        const [y, m, d] = (startIn.value || '').split('-').map(Number);
+        if (hari && y && m && d) {
+            const mulai = new Date(y, m - 1, d);
+            const akhir = new Date(y, m - 1, d + hari - 1);
+            sumRange.textContent = tanggal(mulai) + ' \u2013 ' + tanggal(akhir);
+        } else {
+            sumRange.textContent = '-';
+        }
+
+        // Tagihan = jumlah harga tiap kendaraan yang plat-nya sudah diisi
+        const jumlah = { motor: 0, mobil: 0 };
+        plateList.querySelectorAll('.pd-plate').forEach(row => {
+            if (!row.querySelector('input').value.trim()) return;
+            jumlah[row.querySelector('select').value === 'motor' ? 'motor' : 'mobil']++;
+        });
+
+        const bagian = [];
+        if (jumlah.mobil) bagian.push(jumlah.mobil + ' mobil \u00d7 ' + rupiah(harga.mobil));
+        if (jumlah.motor) bagian.push(jumlah.motor + ' motor \u00d7 ' + rupiah(harga.motor));
+
+        const total = jumlah.mobil * harga.mobil + jumlah.motor * harga.motor;
+        const siap  = planSel.value && bagian.length;
+
+        sumTotal.textContent  = siap ? rupiah(total) : '-';
+        sumDetail.textContent = !planSel.value ? 'Pilih paket untuk melihat tagihan.'
+                              : (bagian.length ? bagian.join(' + ') : 'Isi plat nomor untuk menghitung tagihan.');
+
+        if (!amountTouched) amountIn.value = siap ? total : '';
+    }
+
+    [planSel, startIn].forEach(el => el.addEventListener('change', hitungPaket));
+    plateList.addEventListener('input', hitungPaket);
+    plateList.addEventListener('change', hitungPaket);
+    plateList.addEventListener('click', hitungPaket);                          // hapus baris
+    document.getElementById('btnAddPlate').addEventListener('click', hitungPaket); // tambah baris
+    hitungPaket();
 
     // ================= Foto wajah =================
     const stage    = document.getElementById('stage');
@@ -489,6 +630,12 @@
         }
         if (!firstPlate.value.trim()) {
             e.preventDefault(); firstPlate.focus(); return;
+        }
+        if (!planSel.value) {
+            e.preventDefault(); planSel.focus(); return;
+        }
+        if (!startIn.value) {
+            e.preventDefault(); startIn.focus(); return;
         }
         if (!input.files.length) {
             e.preventDefault();

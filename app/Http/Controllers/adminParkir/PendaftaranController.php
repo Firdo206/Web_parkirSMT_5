@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreMemberRequest;
 use App\Models\FaceProfile;
 use App\Models\Member;
+use App\Models\SubscriptionPlan;
 use App\Models\Vehicle;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -21,7 +23,11 @@ class PendaftaranController extends Controller
 {
     public function index(): View
     {
-        return view('admin_parkir.pendaftaran');
+        return view('admin_parkir.pendaftaran', [
+            'plans' => SubscriptionPlan::where('is_active', true)
+                ->orderBy('sort_order')
+                ->get(),
+        ]);
     }
 
     public function store(StoreMemberRequest $request): RedirectResponse
@@ -47,7 +53,10 @@ class PendaftaranController extends Controller
             $number = $this->normalizePlate((string) $plate);
 
             if ($number !== '') {
-                $plates[] = ['number' => $number, 'type' => $data['vehicle_types'][$i] ?? 'mobil'];
+                $plates[] = [
+                    'number' => $number,
+                    'type' => ($data['vehicle_types'][$i] ?? 'mobil') === 'motor' ? 'motor' : 'mobil',
+                ];
             }
         }
 
@@ -69,7 +78,23 @@ class PendaftaranController extends Controller
             ]);
         }
 
-        // 2. Ekstrak embedding dulu, sebelum menyentuh database
+        // 2. Paket & tagihan dihitung di server (angka dari browser tidak dipercaya)
+        $plan = SubscriptionPlan::where('is_active', true)->find($data['plan_id']);
+
+        if (! $plan) {
+            return back()->withInput()->withErrors(['plan_id' => 'Paket tidak ditemukan atau sudah tidak aktif.']);
+        }
+
+        $total = 0;
+        foreach ($plates as $plate) {
+            $total += (float) ($plate['type'] === 'motor' ? $plan->price_motor : $plan->price_mobil);
+        }
+
+        // Hari terakhir ikut dihitung: mulai 10 Okt + 30 hari berakhir 8 Nov.
+        $start = Carbon::parse($data['start_date'])->startOfDay();
+        $end = $start->copy()->addDays($plan->duration_days - 1);
+
+        // 3. Ekstrak embedding dulu, sebelum menyentuh database
         try {
             $response = Http::timeout(30)
                 ->attach('photo', file_get_contents($photo->getRealPath()), 'photo.jpg')
@@ -88,12 +113,15 @@ class PendaftaranController extends Controller
 
         $embedding = $response->json('embedding');
 
-        // 3. Foto disimpan di disk privat (data biometrik), lalu semua data dalam satu transaksi
+        // 4. Foto disimpan di disk privat (data biometrik), lalu semua data dalam satu transaksi
         $path = $photo->store('faces', 'local');
         $password = $this->generatePassword();
+        $adminId = $request->user()?->id;
 
         try {
-            $member = DB::transaction(function () use ($data, $phone, $plates, $embedding, $path, $password) {
+            $member = DB::transaction(function () use (
+                $data, $phone, $plates, $embedding, $path, $password, $plan, $start, $end, $total, $adminId
+            ) {
                 $member = Member::create([
                     'name' => $data['name'],
                     'phone' => $phone,
@@ -102,7 +130,7 @@ class PendaftaranController extends Controller
                 ]);
 
                 // Akun aplikasi diisi langsung (bukan lewat create) supaya tidak bergantung pada $fillable.
-                // Hash::make aman walau model nanti memakai cast 'hashed' (tidak di-hash dua kali).
+                // Hash::make aman walau model memakai cast 'hashed' (tidak di-hash dua kali).
                 $member->password = Hash::make($password);
                 $member->must_change_password = true;
                 $member->save();
@@ -121,6 +149,22 @@ class PendaftaranController extends Controller
                     'embedding' => $embedding,
                 ]);
 
+                // Langganan pertama langsung aktif
+                $subscription = $member->subscriptions()->create([
+                    'subscription_plan_id' => $plan->id,
+                    'start_date' => $start->toDateString(),
+                    'end_date' => $end->toDateString(),
+                    'status' => 'active',
+                ]);
+
+                $subscription->payments()->create([
+                    'amount_due' => $total,
+                    'amount_paid' => (int) $data['amount_paid'],
+                    'method' => $data['payment_method'],
+                    'paid_at' => now(),
+                    'created_by' => $adminId,
+                ]);
+
                 return $member;
             });
         } catch (UniqueConstraintViolationException) {
@@ -134,7 +178,7 @@ class PendaftaranController extends Controller
             return back()->withInput()->withErrors(['name' => 'Gagal menyimpan data member. Silakan coba lagi.']);
         }
 
-        // 4. Kembali ke form; kata sandi sementara hanya tampil sekali lewat flash session
+        // 5. Kembali ke form; kata sandi sementara hanya tampil sekali lewat flash session
         return back()->with([
             'success' => 'Member berhasil didaftarkan.',
             'created' => [
@@ -142,6 +186,9 @@ class PendaftaranController extends Controller
                 'phone' => $phone,
                 'password' => $password,
                 'vehicles' => array_map(fn ($p) => $this->formatPlate($p['number']), $plates),
+                'plan' => $plan->name,
+                'start' => $start->copy()->locale('id')->translatedFormat('j M Y'),
+                'end' => $end->copy()->locale('id')->translatedFormat('j M Y'),
             ],
         ]);
     }

@@ -38,4 +38,8 @@ class MemberSubscription extends Model
             && $this->start_date->lte(now())
             && $this->end_date->gte(now()->startOfDay());
     }
+    public function payments()
+{
+    return $this->hasMany(MemberPayment::class);
+}
 }
