@@ -6,6 +6,21 @@
 
 @section('content')
 
+    {{-- HASIL RESET KATA SANDI (tampil sekali setelah admin menekan tombol reset) --}}
+    @if (session('reset'))
+        @php $r = session('reset'); @endphp
+        <div class="card" style="margin-bottom:16px;background:#effaf5;border-color:#bfe8d4" role="status">
+            <div style="font-weight:700;color:#14532d;margin-bottom:6px">Kata sandi {{ $r['name'] }} berhasil direset</div>
+            <div style="font-size:14px">
+                Login: <b>{{ $r['phone'] ?: '-' }}</b>
+                &middot; Kata sandi: <b style="font-family:ui-monospace,Consolas,monospace;letter-spacing:.04em">{{ $r['password'] }}</b>
+            </div>
+            <div style="font-size:12.5px;color:#3f6b52;margin-top:6px">
+                Sampaikan ke member. Ia akan diminta menggantinya saat masuk ke aplikasi.
+            </div>
+        </div>
+    @endif
+
     {{-- RINGKASAN --}}
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:16px">
         <div class="card">
@@ -54,17 +69,19 @@
                         <th>Wajah</th>
                         <th>Status</th>
                         <th>Terdaftar</th>
+                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($members as $member)
                         <tr>
-                            {{-- Nama + foto --}}
+                            {{-- Nama + foto (foto disajikan lewat route privat, bukan /storage) --}}
                             <td>
                                 <div style="display:flex;align-items:center;gap:12px">
                                     @if ($member->faceProfile && $member->faceProfile->photo_path)
-                                        <img src="{{ asset('storage/' . $member->faceProfile->photo_path) }}"
+                                        <img src="{{ route('parkir.pelanggan.foto', $member) }}"
                                              alt="Foto {{ $member->name }}"
+                                             loading="lazy"
                                              style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid var(--line)">
                                     @else
                                         <div style="width:40px;height:40px;border-radius:50%;background:var(--navy-2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">
@@ -141,10 +158,22 @@
                             <td style="color:var(--muted);font-size:13px">
                                 {{ $member->created_at?->format('d M Y') }}
                             </td>
+
+                            {{-- Aksi --}}
+                            <td>
+                                <form method="POST"
+                                      action="{{ route('parkir.pelanggan.reset', $member) }}"
+                                      data-confirm="Reset kata sandi {{ $member->name }} menjadi 123456789? Kata sandi lamanya tidak berlaku lagi.">
+                                    @csrf
+                                    <button type="submit" class="btn btn-outline" style="padding:6px 12px;font-size:13px;white-space:nowrap">
+                                        Reset kata sandi
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="empty">
+                            <td colspan="8" class="empty">
                                 @if ($search !== '' || $status !== '')
                                     Tidak ada pelanggan yang cocok dengan pencarian.
                                 @else
@@ -179,5 +208,13 @@
             </div>
         @endif
     </div>
+
+    <script>
+        // Konfirmasi sebelum form yang punya atribut data-confirm dikirim
+        document.addEventListener('submit', function (e) {
+            const msg = e.target.dataset.confirm;
+            if (msg && !confirm(msg)) e.preventDefault();
+        });
+    </script>
 
 @endsection

@@ -56,6 +56,8 @@ Route::middleware(['auth', 'role:admin_parkir'])
         Route::post('/pendaftaran', [PendaftaranController::class, 'store'])->name('pendaftaran.store');
 
         Route::get('/pelanggan', [PelangganController::class, 'index'])->name('pelanggan');
+        Route::post('/pelanggan/{member}/reset-password', [PelangganController::class, 'resetPassword'])->name('pelanggan.reset');
+        Route::get('/pelanggan/{member}/foto', [PelangganController::class, 'foto'])->name('pelanggan.foto');
         Route::get('/darurat', [DaruratController::class, 'index'])->name('darurat');
 
         // Akses gerbang / deteksi plat
