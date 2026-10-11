@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\BerandaController;
 use App\Http\Controllers\Api\ParkingGateController;
 use App\Http\Controllers\Api\PasswordController;
 use App\Http\Controllers\AccessController;
+use App\Http\Controllers\Api\RiwayatController;
 use App\Http\Middleware\EnsureMemberCanAccess;
 
 // ===== Gerbang parkir (IoT) - punyamu, tidak diubah =====
@@ -29,6 +30,7 @@ Route::middleware(['auth:sanctum', EnsureMemberCanAccess::class])->group(functio
 
     // Rute di bawah ini otomatis terkunci sampai sandi diganti
     Route::get('/beranda', [BerandaController::class, 'index']);
+    Route::get('/riwayat', [RiwayatController::class, 'index']);
 
     // nanti: /riwayat, /alerts, /alerts/{id}/konfirmasi, /panggil-petugas
 });
