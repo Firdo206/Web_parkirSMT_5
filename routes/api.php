@@ -34,7 +34,8 @@ Route::middleware(['auth:sanctum', EnsureMemberCanAccess::class])->group(functio
     Route::get('/beranda', [BerandaController::class, 'index']);
     Route::get('/riwayat', [RiwayatController::class, 'index']);
     Route::get('/notifikasi', [NotifikasiController::class, 'index']);
-    Route::post('/notifikasi/{accessRequest}/respon', [NotifikasiController::class, 'respond']);
+    Route::post('/notifikasi/{id}/respon', [NotifikasiController::class, 'respond'])->whereNumber('id');
+    Route::post('/notifikasi/{id}/buzzer', [NotifikasiController::class, 'buzzer'])->whereNumber('id');
     Route::get('/profil', [ProfilController::class, 'show']);
      Route::get('/profil/foto', [ProfilController::class, 'foto']);
 

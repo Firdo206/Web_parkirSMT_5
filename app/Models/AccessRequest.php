@@ -7,8 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class AccessRequest extends Model
 {
     protected $fillable = [
-        'member_id', 'plate_detected', 'plate_match', 'face_match',
-        'status', 'requested_at', 'responded_at',
+        'member_id', 'gate', 'vehicle_id', 'direction', 'reason',
+        'plate_detected', 'plate_match', 'face_match',
+        'status', 'requested_at', 'responded_at', 'expires_at', 'buzzer_at',
     ];
 
     protected function casts(): array
@@ -18,12 +19,19 @@ class AccessRequest extends Model
             'face_match' => 'boolean',
             'requested_at' => 'datetime',
             'responded_at' => 'datetime',
+            'expires_at' => 'datetime',
+            'buzzer_at' => 'datetime',
         ];
     }
 
     public function member()
     {
         return $this->belongsTo(Member::class);
+    }
+
+    public function vehicle()
+    {
+        return $this->belongsTo(Vehicle::class);
     }
 
     public function securityAlert()
