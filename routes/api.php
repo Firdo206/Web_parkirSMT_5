@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\PasswordController;
 use App\Http\Controllers\AccessController;
 use App\Http\Controllers\Api\RiwayatController;
 use App\Http\Controllers\Api\NotifikasiController;
+   use App\Http\Controllers\Api\ProfilController;
 use App\Http\Middleware\EnsureMemberCanAccess;
 
 // ===== Gerbang parkir (IoT) - punyamu, tidak diubah =====
@@ -34,6 +35,8 @@ Route::middleware(['auth:sanctum', EnsureMemberCanAccess::class])->group(functio
     Route::get('/riwayat', [RiwayatController::class, 'index']);
     Route::get('/notifikasi', [NotifikasiController::class, 'index']);
     Route::post('/notifikasi/{accessRequest}/respon', [NotifikasiController::class, 'respond']);
+    Route::get('/profil', [ProfilController::class, 'show']);
+     Route::get('/profil/foto', [ProfilController::class, 'foto']);
 
     // nanti: /riwayat, /alerts, /alerts/{id}/konfirmasi, /panggil-petugas
 });
