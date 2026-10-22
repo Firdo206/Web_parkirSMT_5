@@ -138,7 +138,6 @@
         background:var(--pd-soft);border:2px dashed var(--pd-line);display:flex;align-items:center;justify-content:center;
         transition:border-color .15s, background .15s
     }
-    .pd-stage.is-drag{border-color:var(--pd-accent);background:color-mix(in srgb, var(--pd-accent) 6%, #fff)}
     .pd-stage.is-filled,.pd-stage.is-live{border-style:solid;border-color:transparent;background:#0e1116}
     .pd-stage.has-error{border-color:var(--pd-red)}
 
@@ -151,10 +150,10 @@
     .pd-video{transform:scaleX(-1)} /* cermin hanya untuk tampilan, hasil foto tidak ter-mirror */
     .pd-stage.is-live .pd-video{display:block}
     .pd-stage.is-filled .pd-shot{display:block}
-    .pd-shot.is-mirror{transform:scaleX(-1)} /* hanya preview foto dari kamera; file yang dikirim tetap tidak ter-mirror */
+    .pd-shot.is-mirror{transform:scaleX(-1)} /* hanya preview; file yang dikirim tetap tidak ter-mirror */
     .pd-stage.is-live .pd-empty,.pd-stage.is-filled .pd-empty{display:none}
 
-    /* Panduan posisi wajah */
+    /* Panduan posisi wajah + petunjuk gerakan */
     .pd-guide{position:absolute;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none}
     .pd-stage.is-live .pd-guide{display:flex}
     .pd-guide i{
@@ -162,9 +161,19 @@
         box-shadow:0 0 0 999px rgba(0,0,0,.35)
     }
     .pd-guide em{
-        position:absolute;bottom:12px;left:0;right:0;text-align:center;font-style:normal;
-        font-size:12.5px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)
+        position:absolute;bottom:14px;left:0;right:0;text-align:center;font-style:normal;
+        font-size:14px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)
     }
+    .pd-count{
+        position:absolute;top:12px;right:12px;display:none;padding:4px 10px;border-radius:999px;
+        background:rgba(0,0,0,.55);color:#fff;font-size:13px;font-weight:700;letter-spacing:.03em
+    }
+    .pd-stage.is-capturing .pd-count{display:block}
+
+    /* Bar kemajuan pengambilan foto */
+    .pd-progress{display:none;height:6px;margin-top:12px;border-radius:999px;background:var(--pd-line);overflow:hidden}
+    .pd-progress.is-on{display:block}
+    .pd-progress i{display:block;height:100%;width:0;background:var(--pd-accent);transition:width .25s}
 
     /* Tombol di bawah panggung */
     .pd-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
@@ -183,7 +192,7 @@
     .pd-msg.is-error{color:var(--pd-red)}
     .pd-tips{margin:16px 0 0;padding:12px 14px;border-radius:10px;background:var(--pd-soft);font-size:12.5px;color:var(--pd-muted);line-height:1.55}
 
-    /* input file disembunyikan tapi tetap ada di form */
+    /* input file disembunyikan tapi tetap ada di form (diisi lewat kamera) */
     .pd-file{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 
     /* ---------- Footer ---------- */
@@ -320,12 +329,12 @@
             </section>
         </div>
 
-        {{-- ================= KANAN: foto wajah ================= --}}
+        {{-- ================= KANAN: foto wajah (30 sampel dari kamera) ================= --}}
         <aside class="pd-side">
             <section class="pd-panel">
                 <div class="pd-head">
                     <h3>Foto wajah</h3>
-                    <p>Dipakai untuk mengenali member di gerbang.</p>
+                    <p>Kamera mengambil 30 foto otomatis untuk melatih pengenalan wajah di gerbang.</p>
                 </div>
 
                 <div class="pd-stage" id="stage">
@@ -335,39 +344,42 @@
                             <circle cx="12" cy="9" r="3.6"/><path d="M4.5 20c.9-3.6 3.9-5.6 7.5-5.6s6.6 2 7.5 5.6"/>
                         </svg>
                         <strong>Belum ada foto</strong>
-                        <span>Buka kamera atau pilih foto dari komputer</span>
+                        <span>Buka kamera lalu mulai pengambilan 30 foto</span>
                     </div>
 
                     {{-- Kondisi kamera menyala --}}
                     <video class="pd-video" id="camVideo" autoplay playsinline muted></video>
-                    <div class="pd-guide"><i></i><em>Posisikan wajah di dalam bingkai</em></div>
+                    <div class="pd-guide"><i></i><em id="guideText">Posisikan wajah di dalam bingkai</em></div>
+                    <div class="pd-count" id="countBadge">0/30</div>
 
-                    {{-- Kondisi foto sudah ada --}}
-                    <img class="pd-shot" id="shot" alt="Foto wajah member">
+                    {{-- Kondisi foto sudah ada (pratinjau frame tengah) --}}
+                    <img class="pd-shot" id="shot" alt="Pratinjau foto wajah member">
                 </div>
                 <canvas id="camCanvas" hidden></canvas>
+
+                <div class="pd-progress" id="progress"><i id="progressBar"></i></div>
 
                 <div class="pd-actions">
                     <button type="button" class="pd-btn primary" id="btnOpen">
                         <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg>
                         Buka kamera
                     </button>
-                    <button type="button" class="pd-btn primary" id="btnSnap" hidden>Ambil foto</button>
+                    <button type="button" class="pd-btn primary" id="btnSnap" hidden>Mulai ambil 30 foto</button>
                     <button type="button" class="pd-btn" id="btnCancel" hidden>Batal</button>
                     <button type="button" class="pd-btn" id="btnRetake" hidden>Ulangi foto</button>
-                    <button type="button" class="pd-btn" id="btnUpload">
-                        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V5m0 0-4 4m4-4 4 4M5 19h14"/></svg>
-                        Pilih file
-                    </button>
                 </div>
 
-                <input class="pd-file" type="file" name="photo" id="photoInput" accept="image/*" tabindex="-1">
+                {{-- Diisi otomatis oleh JavaScript dengan 30 frame dari kamera --}}
+                <input class="pd-file" type="file" name="photos[]" id="photoInput" accept="image/*" multiple tabindex="-1">
 
                 <div class="pd-msg" id="msg" role="status"></div>
-                @error('photo') <div class="err">{{ $message }}</div> @enderror
+                @error('photos') <div class="err">{{ $message }}</div> @enderror
+                @error('photos.*') <div class="err">{{ $message }}</div> @enderror
 
                 <div class="pd-tips">
-                    Pastikan pencahayaan cukup, wajah menghadap lurus ke kamera, dan hanya ada satu orang dalam foto.
+                    Pastikan pencahayaan cukup, hanya ada satu orang di depan kamera, dan ikuti petunjuk di layar:
+                    hadap lurus, tengok pelan ke kiri dan kanan, lalu angkat dan tundukkan kepala sedikit.
+                    Proses pengambilan sekitar 12 detik.
                 </div>
             </section>
         </aside>
@@ -375,7 +387,7 @@
 
     <div class="pd-foot">
         <a href="{{ route('parkir.dashboard') }}" class="btn btn-outline">Batal</a>
-        <button type="submit" class="btn btn-primary">Simpan member</button>
+        <button type="submit" class="btn btn-primary" id="btnSubmit">Simpan member</button>
     </div>
 </form>
 
@@ -480,19 +492,42 @@
     document.getElementById('btnAddPlate').addEventListener('click', hitungPaket); // tambah baris
     hitungPaket();
 
-    // ================= Foto wajah =================
-    const stage    = document.getElementById('stage');
-    const video    = document.getElementById('camVideo');
-    const canvas   = document.getElementById('camCanvas');
-    const shot     = document.getElementById('shot');
-    const input    = document.getElementById('photoInput');
-    const msg      = document.getElementById('msg');
-    const btnOpen  = document.getElementById('btnOpen');
-    const btnSnap  = document.getElementById('btnSnap');
-    const btnCancel= document.getElementById('btnCancel');
-    const btnRetake= document.getElementById('btnRetake');
-    const btnUpload= document.getElementById('btnUpload');
+    // ================= Foto wajah: ambil 30 sampel dari kamera (seperti registrasi.py) =================
+    const TOTAL = 30;          // JUMLAH_FOTO di registrasi.py
+    const JEDA  = 400;         // JEDA_AMBIL (ms) antar foto, supaya variasi posisi ada
+    const LEBAR = 640;         // frame dikecilkan agar upload 30 file tetap ringan
+    const KUALITAS = 0.85;
+
+    // Petunjuk gerakan kepala per rentang frame: [mulai dari frame ke-, teks]
+    const PETUNJUK = [
+        [0,  'Hadap lurus ke kamera'],
+        [6,  'Tengok pelan ke kiri'],
+        [12, 'Tengok pelan ke kanan'],
+        [18, 'Angkat dagu sedikit'],
+        [24, 'Tundukkan kepala sedikit'],
+    ];
+    const petunjuk = i => PETUNJUK.reduce((t, [mulai, teks]) => (i >= mulai ? teks : t), PETUNJUK[0][1]);
+    const tunggu   = ms => new Promise(r => setTimeout(r, ms));
+
+    const stage     = document.getElementById('stage');
+    const video     = document.getElementById('camVideo');
+    const canvas    = document.getElementById('camCanvas');
+    const shot      = document.getElementById('shot');
+    const input     = document.getElementById('photoInput');
+    const msg       = document.getElementById('msg');
+    const guideText = document.getElementById('guideText');
+    const countBadge= document.getElementById('countBadge');
+    const progress  = document.getElementById('progress');
+    const progressBar = document.getElementById('progressBar');
+    const btnOpen   = document.getElementById('btnOpen');
+    const btnSnap   = document.getElementById('btnSnap');
+    const btnCancel = document.getElementById('btnCancel');
+    const btnRetake = document.getElementById('btnRetake');
+    const GUIDE_DEFAULT = 'Posisikan wajah di dalam bingkai';
+
     let stream = null;
+    let capturing = false;
+    let cancelled = false;
 
     function setMsg(text, isError) {
         msg.textContent = text || '';
@@ -505,21 +540,20 @@
         stage.classList.toggle('is-live',   state === 'live');
         stage.classList.toggle('is-filled', state === 'filled');
         btnOpen.hidden   = state !== 'empty';
-        btnUpload.hidden = state === 'live';
-        btnSnap.hidden   = state !== 'live';
+        btnSnap.hidden   = state !== 'live' || capturing;
         btnCancel.hidden = state !== 'live';
         btnRetake.hidden = state !== 'filled';
     }
 
-    function showFile(file, mirror) {
-        const reader = new FileReader();
-        reader.onload = e => {
-            shot.classList.toggle('is-mirror', !!mirror);
-            shot.src = e.target.result;
-            setState('filled');
-            setMsg(file.name);
-        };
-        reader.readAsDataURL(file);
+    function setCapturing(on) {
+        capturing = on;
+        stage.classList.toggle('is-capturing', on);
+        progress.classList.toggle('is-on', on);
+        btnSnap.hidden = on || !stage.classList.contains('is-live');
+        if (!on) {
+            progressBar.style.width = '0';
+            guideText.textContent = GUIDE_DEFAULT;
+        }
     }
 
     function stopCam() {
@@ -550,32 +584,71 @@
         }
         video.srcObject = stream;
         setState('live');
+        setMsg('Posisikan wajah di dalam bingkai, lalu tekan "Mulai ambil 30 foto".');
     }
 
-    function snap() {
+    // Ambil TOTAL frame berurutan dengan jeda JEDA ms, lalu isikan ke <input type="file" multiple>
+    async function snap() {
+        if (capturing) return;
         if (!video.videoWidth) {
             setMsg('Kamera belum siap, tunggu sebentar lalu coba lagi.', true);
             return;
         }
-        canvas.width  = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d').drawImage(video, 0, 0);
 
-        canvas.toBlob(blob => {
-            const file = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
-            const dt = new DataTransfer();
-            dt.items.add(file);
-            input.files = dt.files;
-            stopCam();
-            showFile(file, true);
-            setMsg('Foto dari kamera');
-        }, 'image/jpeg', 0.92);
+        cancelled = false;
+        setMsg('');
+        setCapturing(true);
+
+        const w = LEBAR;
+        const h = Math.round(video.videoHeight * LEBAR / video.videoWidth);
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        const files = [];
+
+        for (let i = 0; i < TOTAL; i++) {
+            if (cancelled) break;
+
+            guideText.textContent = petunjuk(i);
+            countBadge.textContent = (i + 1) + '/' + TOTAL;
+            progressBar.style.width = Math.round((i / TOTAL) * 100) + '%';
+
+            ctx.drawImage(video, 0, 0, w, h);
+            const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', KUALITAS));
+            if (blob) {
+                files.push(new File([blob], 'frame_' + String(i + 1).padStart(2, '0') + '.jpg', { type: 'image/jpeg' }));
+            }
+
+            await tunggu(JEDA);
+        }
+
+        if (cancelled) { setCapturing(false); return; }
+
+        const dt = new DataTransfer();
+        files.forEach(f => dt.items.add(f));
+        input.files = dt.files;
+
+        stopCam();
+        setCapturing(false);
+
+        // Pratinjau: frame tengah (foto yang sama akan disimpan sebagai profil wajah)
+        const tengah = files[Math.floor(files.length / 2)];
+        const reader = new FileReader();
+        reader.onload = e => {
+            shot.classList.add('is-mirror');
+            shot.src = e.target.result;
+            setState('filled');
+            setMsg(files.length + ' foto dari kamera siap dikirim. Wajah akan diperiksa saat data disimpan.');
+        };
+        reader.readAsDataURL(tengah);
     }
 
     function reset() {
+        cancelled = capturing;
         stopCam();
         input.value = '';
         shot.removeAttribute('src');
+        setCapturing(false);
         setState('empty');
         setMsg('');
     }
@@ -584,36 +657,17 @@
     btnSnap.addEventListener('click', snap);
     btnCancel.addEventListener('click', reset);
     btnRetake.addEventListener('click', () => { reset(); openCam(); });
-    btnUpload.addEventListener('click', () => input.click());
-
-    input.addEventListener('change', () => {
-        if (input.files[0]) { stopCam(); showFile(input.files[0]); }
-    });
-
-    // Drag & drop ke panggung
-    ['dragenter', 'dragover'].forEach(ev => stage.addEventListener(ev, e => {
-        e.preventDefault(); stage.classList.add('is-drag');
-    }));
-    ['dragleave', 'drop'].forEach(ev => stage.addEventListener(ev, e => {
-        e.preventDefault(); stage.classList.remove('is-drag');
-    }));
-    stage.addEventListener('drop', e => {
-        const file = e.dataTransfer.files[0];
-        if (!file || !file.type.startsWith('image/')) {
-            setMsg('File harus berupa gambar (JPG/PNG).', true);
-            return;
-        }
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        input.files = dt.files;
-        stopCam();
-        showFile(file);
-    });
 
     window.addEventListener('beforeunload', stopCam);
 
     // ================= Submit =================
     document.getElementById('pdForm').addEventListener('submit', e => {
+        if (capturing) {
+            e.preventDefault();
+            setMsg('Tunggu sampai pengambilan 30 foto selesai.', true);
+            return;
+        }
+
         // Buang baris plat tambahan yang kosong supaya tidak terkirim sebagai data kosong
         const rows = plateList.querySelectorAll('.pd-plate');
         rows.forEach((row, i) => {
@@ -637,11 +691,17 @@
         if (!startIn.value) {
             e.preventDefault(); startIn.focus(); return;
         }
-        if (!input.files.length) {
+        if (input.files.length < TOTAL / 2) {
             e.preventDefault();
-            setMsg('Foto wajah wajib diisi. Ambil dari kamera atau pilih file.', true);
+            setMsg('Foto wajah wajib diisi. Buka kamera lalu ambil 30 foto.', true);
             stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
         }
+
+        // Training LBPH di server butuh beberapa detik: cegah klik ganda
+        const btn = document.getElementById('btnSubmit');
+        btn.textContent = 'Memproses wajah...';
+        setTimeout(() => { btn.disabled = true; }, 0);
     });
 
     setState('empty');

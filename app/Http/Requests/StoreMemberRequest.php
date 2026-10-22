@@ -24,7 +24,10 @@ class StoreMemberRequest extends FormRequest
             'vehicle_types'   => ['required', 'array', 'min:1'],
             'vehicle_types.*' => ['required', 'in:mobil,motor'],
 
-            'photo' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:4096'],
+            // Banyak frame wajah dari kamera (browser mengirim ~30 frame JPEG).
+            // Python menyaring frame yang wajahnya terdeteksi; Laravel hanya memastikan jumlah & formatnya.
+            'photos'   => ['required', 'array', 'min:15', 'max:40'],
+            'photos.*' => ['image', 'mimes:jpg,jpeg,png', 'max:4096'],
 
             // Langganan pertama & pembayarannya. Kunci ini yang dibaca PendaftaranController.
             'plan_id'        => ['required', 'integer'],
@@ -42,8 +45,14 @@ class StoreMemberRequest extends FormRequest
             'plates.*.unique'         => 'Plat nomor :input sudah terdaftar.',
             'plates.*.distinct'       => 'Ada plat nomor yang ditulis dobel.',
 
-            'photo.required'          => 'Foto wajah wajib diunggah.',
-            'photo.image'             => 'File harus berupa gambar.',
+            'photos.required'         => 'Foto wajah wajib diambil dari kamera.',
+            'photos.array'            => 'Format foto wajah tidak valid. Ambil ulang dari kamera.',
+            'photos.min'              => 'Foto wajah kurang (minimal :min foto). Ambil ulang sampai 30 foto terkumpul.',
+            'photos.max'              => 'Terlalu banyak foto (maksimal :max). Ambil ulang dari kamera.',
+            'photos.*.image'          => 'Salah satu foto bukan gambar yang valid. Ambil ulang dari kamera.',
+            'photos.*.mimes'          => 'Foto wajah harus berformat JPG atau PNG.',
+            'photos.*.max'            => 'Salah satu foto terlalu besar (maksimal 4 MB).',
+            'photos.*.uploaded'       => 'Upload foto gagal. Periksa batas upload server (max_file_uploads di php.ini).',
 
             'plan_id.required'        => 'Pilih paket langganan.',
             'start_date.required'     => 'Tanggal mulai wajib diisi.',

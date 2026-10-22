@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\adminParkir;
 
+use App\Exceptions\FaceEnrollmentException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreMemberRequest;
 use App\Models\FaceProfile;
@@ -11,6 +12,7 @@ use App\Models\Vehicle;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -21,6 +23,9 @@ use Throwable;
 
 class PendaftaranController extends Controller
 {
+    /** Jumlah minimal frame yang dikirim browser (Python tetap menyaring yang wajahnya terdeteksi). */
+    private const MIN_FRAMES = 15;
+
     public function index(): View
     {
         return view('admin_parkir.pendaftaran', [
@@ -33,7 +38,16 @@ class PendaftaranController extends Controller
     public function store(StoreMemberRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        $photo = $request->file('photo');
+
+        // Banyak frame wajah dari kamera (name="photos[]"), seperti 30 foto di registrasi.py
+        /** @var UploadedFile[] $photos */
+        $photos = array_values((array) $request->file('photos'));
+
+        if (count($photos) < self::MIN_FRAMES) {
+            return back()->withInput()->withErrors([
+                'photos' => 'Foto wajah kurang. Ambil ulang dari kamera sampai semua foto terkumpul.',
+            ]);
+        }
 
         // 1. Samakan format No. HP & plat nomor, lalu cek duplikat sebelum menyentuh Python/DB
         $phone = $this->normalizePhone((string) ($data['phone'] ?? ''));
@@ -94,33 +108,18 @@ class PendaftaranController extends Controller
         $start = Carbon::parse($data['start_date'])->startOfDay();
         $end = $start->copy()->addDays($plan->duration_days - 1);
 
-        // 3. Ekstrak embedding dulu, sebelum menyentuh database
-        try {
-            $response = Http::timeout(30)
-                ->attach('photo', file_get_contents($photo->getRealPath()), 'photo.jpg')
-                ->post(config('services.cv.url', 'http://127.0.0.1:5000').'/extract-embedding');
-        } catch (ConnectionException) {
-            return back()->withInput()->withErrors([
-                'photo' => 'Layanan pengenalan wajah tidak bisa dihubungi. Pastikan Python service sedang berjalan.',
-            ]);
-        }
-
-        if ($response->failed() || ! $response->json('embedding')) {
-            return back()->withInput()->withErrors([
-                'photo' => $response->json('error') ?? 'Layanan pengenalan wajah tidak merespons.',
-            ]);
-        }
-
-        $embedding = $response->json('embedding');
-
-        // 4. Foto disimpan di disk privat (data biometrik), lalu semua data dalam satu transaksi
-        $path = $photo->store('faces', 'local');
+        // 3. Simpan SATU foto representatif (frame tengah) di disk privat sebagai profil wajah.
+        //    Seluruh frame hanya dikirim ke Python untuk training, tidak disimpan di Laravel.
+        $path = $photos[intdiv(count($photos), 2)]->store('faces', 'local');
         $password = $this->generatePassword();
         $adminId = $request->user()?->id;
+        $enrolledId = null; // member yang wajahnya sudah masuk ke Python
 
+        // 4. Semua data dalam satu transaksi. Enroll wajah ke Python dilakukan paling akhir:
+        //    kalau gagal, exception membatalkan seluruh transaksi database.
         try {
             $member = DB::transaction(function () use (
-                $data, $phone, $plates, $embedding, $path, $password, $plan, $start, $end, $total, $adminId
+                $data, $phone, $plates, $photos, $path, $password, $plan, $start, $end, $total, $adminId, &$enrolledId
             ) {
                 $member = Member::create([
                     'name' => $data['name'],
@@ -146,7 +145,6 @@ class PendaftaranController extends Controller
                 FaceProfile::create([
                     'member_id' => $member->id,
                     'photo_path' => $path,
-                    'embedding' => $embedding,
                 ]);
 
                 // Langganan pertama langsung aktif
@@ -165,14 +163,25 @@ class PendaftaranController extends Controller
                     'created_by' => $adminId,
                 ]);
 
+                // Terakhir: kirim semua frame ke Python
+                // (deteksi Haar cascade tiap frame -> preprocessing -> training LBPH)
+                $this->enrollFace($member->id, $photos);
+                $enrolledId = $member->id;
+
                 return $member;
             });
+        } catch (FaceEnrollmentException $e) {
+            Storage::disk('local')->delete($path);
+
+            return back()->withInput()->withErrors(['photos' => $e->getMessage()]);
         } catch (UniqueConstraintViolationException) {
             Storage::disk('local')->delete($path);
+            $this->removeFace($enrolledId);
 
             return back()->withInput()->withErrors(['name' => 'No. HP atau plat nomor sudah terdaftar.']);
         } catch (Throwable $e) {
             Storage::disk('local')->delete($path);
+            $this->removeFace($enrolledId);
             report($e);
 
             return back()->withInput()->withErrors(['name' => 'Gagal menyimpan data member. Silakan coba lagi.']);
@@ -191,6 +200,56 @@ class PendaftaranController extends Controller
                 'end' => $end->copy()->locale('id')->translatedFormat('j M Y'),
             ],
         ]);
+    }
+
+    /**
+     * Kirim semua frame ke Python: tiap frame dideteksi (Haar cascade) -> preprocessing -> training LBPH.
+     * Field multipart bernama "photos" diulang per frame; Flask membacanya lewat request.files.getlist('photos').
+     *
+     * @param  UploadedFile[]  $photos
+     */
+    private function enrollFace(int $memberId, array $photos): void
+    {
+        try {
+            $request = Http::timeout(120); // deteksi 30 frame + training ulang bisa memakan waktu
+
+            foreach ($photos as $i => $photo) {
+                $request = $request->attach(
+                    'photos',
+                    file_get_contents($photo->getRealPath()),
+                    sprintf('frame_%02d.jpg', $i + 1)
+                );
+            }
+
+            $response = $request->post(
+                config('services.cv.url', 'http://127.0.0.1:5000').'/enroll',
+                ['member_id' => $memberId]
+            );
+        } catch (ConnectionException) {
+            throw new FaceEnrollmentException(
+                'Layanan pengenalan wajah tidak bisa dihubungi. Pastikan Python service sedang berjalan.'
+            );
+        }
+
+        if ($response->failed()) {
+            throw new FaceEnrollmentException(
+                $response->json('error') ?? 'Layanan pengenalan wajah tidak merespons.'
+            );
+        }
+    }
+
+    /** Bersihkan sampel wajah di Python bila transaksi gagal setelah enroll berhasil. */
+    private function removeFace(?int $memberId): void
+    {
+        if ($memberId === null) {
+            return;
+        }
+
+        try {
+            Http::timeout(30)->delete(config('services.cv.url', 'http://127.0.0.1:5000')."/members/{$memberId}");
+        } catch (Throwable $e) {
+            report($e);
+        }
     }
 
     /** "+62 812-3456-7890" / "6281234567890" / "81234567890" -> "081234567890" */
