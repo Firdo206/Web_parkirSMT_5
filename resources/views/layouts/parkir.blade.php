@@ -93,6 +93,7 @@
             {{-- <a href="{{ route('parkir.faces.index') }}">Wajah</a> --}}
 
             <div class="label">Monitoring</div>
+            <a href="{{ route('parkir.slot') }}" class="{{ request()->routeIs('parkir.slot*') ? 'active' : '' }}">Slot Parkir</a>
             <a href="{{ route('parkir.darurat') }}" class="{{ request()->routeIs('parkir.darurat') ? 'active' : '' }}">Buka Pintu Darurat</a>
             {{-- <a href="{{ route('parkir.logs.index') }}">Log Akses</a> --}}
             {{-- <a href="{{ route('parkir.alerts.index') }}">Security Alert</a> --}}

@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\adminParkir;
 
 use App\Exceptions\FaceEnrollmentException;
+use App\Exceptions\SlotPenuhException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreMemberRequest;
 use App\Models\FaceProfile;
 use App\Models\Member;
 use App\Models\SubscriptionPlan;
 use App\Models\Vehicle;
+use App\Services\SlotService;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
@@ -32,6 +34,7 @@ class PendaftaranController extends Controller
             'plans' => SubscriptionPlan::where('is_active', true)
                 ->orderBy('sort_order')
                 ->get(),
+            'slots' => app(SlotService::class)->ringkasan(),
         ]);
     }
 
@@ -92,6 +95,14 @@ class PendaftaranController extends Controller
             ]);
         }
 
+        // Slot: kapasitas per jenis kendaraan. Ini cek awal supaya gagal cepat,
+        // sebelum foto disimpan dan sebelum memanggil Python.
+        $perJenis = array_count_values(array_column($plates, 'type'));
+
+        if ($pesanSlot = app(SlotService::class)->kekurangan($perJenis)) {
+            return back()->withInput()->withErrors(['plates' => $pesanSlot]);
+        }
+
         // 2. Paket & tagihan dihitung di server (angka dari browser tidak dipercaya)
         $plan = SubscriptionPlan::where('is_active', true)->find($data['plan_id']);
 
@@ -119,8 +130,14 @@ class PendaftaranController extends Controller
         //    kalau gagal, exception membatalkan seluruh transaksi database.
         try {
             $member = DB::transaction(function () use (
-                $data, $phone, $plates, $photos, $path, $password, $plan, $start, $end, $total, $adminId, &$enrolledId
+                $data, $phone, $plates, $photos, $path, $password, $plan, $start, $end, $total, $adminId, $perJenis, &$enrolledId
             ) {
+                // Cek ulang dengan kunci: dua pendaftaran bersamaan tidak boleh sama-sama
+                // mengambil slot terakhir. Dilakukan sebelum ada data yang dibuat.
+                $slot = app(SlotService::class);
+                $slot->kunci();
+                $slot->pastikanMuat($perJenis);
+
                 $member = Member::create([
                     'name' => $data['name'],
                     'phone' => $phone,
@@ -170,6 +187,11 @@ class PendaftaranController extends Controller
 
                 return $member;
             });
+        } catch (SlotPenuhException $e) {
+            // Slot dicek di awal transaksi, jadi Python belum disentuh: cukup hapus foto.
+            Storage::disk('local')->delete($path);
+
+            return back()->withInput()->withErrors(['plates' => $e->getMessage()]);
         } catch (FaceEnrollmentException $e) {
             Storage::disk('local')->delete($path);
 

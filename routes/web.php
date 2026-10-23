@@ -6,6 +6,7 @@ use App\Http\Controllers\adminParkir\DaruratController;
 use App\Http\Controllers\adminParkir\DashboardController as ParkirDashboardController;
 use App\Http\Controllers\adminParkir\PelangganController;
 use App\Http\Controllers\adminParkir\PendaftaranController;
+use App\Http\Controllers\adminParkir\SlotController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SuperAdmin\AdminAccountController;
 use App\Http\Controllers\adminParkir\PaketController;
@@ -62,6 +63,9 @@ Route::middleware(['auth', 'role:admin_parkir'])
         Route::patch('/pelanggan/{member}/status', [PelangganController::class, 'toggleStatus'])->name('pelanggan.status');
         Route::delete('/pelanggan/{member}', [PelangganController::class, 'destroy'])->name('pelanggan.destroy');
         Route::get('/darurat', [DaruratController::class, 'index'])->name('darurat');
+        Route::post('/darurat/buka', [DaruratController::class, 'open'])->name('darurat.open');
+        Route::get('/slot', [SlotController::class, 'index'])->name('slot');
+        Route::put('/slot', [SlotController::class, 'update'])->name('slot.update');
         Route::get('/paket', [PaketController::class, 'index'])->name('paket.index');
         Route::get('/paket/tambah', [PaketController::class, 'create'])->name('paket.create');
         Route::post('/paket', [PaketController::class, 'store'])->name('paket.store');

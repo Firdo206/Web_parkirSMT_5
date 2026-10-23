@@ -22,7 +22,7 @@ class StoreMemberRequest extends FormRequest
             'plates.*' => ['required', 'string', 'max:20', 'distinct', 'unique:vehicles,plate_number'],
 
             'vehicle_types'   => ['required', 'array', 'min:1'],
-            'vehicle_types.*' => ['required', 'in:mobil,motor'],
+            'vehicle_types.*' => ['required', 'in:mobil'],
 
             // Banyak frame wajah dari kamera (browser mengirim ~30 frame JPEG).
             // Python menyaring frame yang wajahnya terdeteksi; Laravel hanya memastikan jumlah & formatnya.

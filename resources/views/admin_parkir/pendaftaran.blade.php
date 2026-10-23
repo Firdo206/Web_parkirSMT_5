@@ -120,6 +120,14 @@
     }
     .pd-add:hover{text-decoration:underline}
 
+    /* ---------- Ketersediaan slot ---------- */
+    .pd-slots{display:flex;gap:8px;flex-wrap:wrap;margin:-4px 0 14px}
+    .pd-slot{padding:5px 12px;border-radius:999px;background:var(--pd-soft);border:1px solid var(--pd-line);font-size:12.5px;color:var(--pd-muted)}
+    .pd-slot b{color:#1f2733}
+    .pd-slot small{margin-left:4px;font-size:11.5px}
+    .pd-slot.is-full{background:#fdeeee;border-color:#f3c4c4;color:var(--pd-red)}
+    .pd-slot.is-full b{color:var(--pd-red)}
+
     /* ---------- Ringkasan paket ---------- */
     .pd-sum{
         display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:4px 0 16px;padding:14px 16px;border-radius:12px;
@@ -238,16 +246,25 @@
                     <p>Satu member bisa memiliki lebih dari satu kendaraan.</p>
                 </div>
 
+                {{-- Ketersediaan slot per jenis kendaraan (dari SlotService) --}}
+                @if (!empty($slots))
+                    <div class="pd-slots" id="pdSlots">
+                        @foreach (['mobil' => 'Mobil'] as $jenis => $label)
+                            @php $sl = $slots[$jenis]; @endphp
+                            <span class="pd-slot {{ $sl['sisa'] === 0 ? 'is-full' : '' }}" data-jenis="{{ $jenis }}" data-sisa="{{ $sl['sisa'] }}">
+                                {{ $label }}: <b>{{ $sl['sisa'] === 0 ? 'penuh' : 'sisa '.$sl['sisa'] }}</b> <small>{{ $sl['terisi'] }}/{{ $sl['kapasitas'] }}</small>
+                            </span>
+                        @endforeach
+                    </div>
+                    <div class="err" id="slotWarn" hidden></div>
+                @endif
+
                 <div class="pd-plates" id="plateList">
                     <div class="pd-plate">
-                        <input type="text" name="plates[]" placeholder="B 1234 ABC" autocomplete="off" required>
-                        <select name="vehicle_types[]" aria-label="Jenis kendaraan">
-                            <option value="mobil">Mobil</option>
-                            <option value="motor">Motor</option>
-                        </select>
-                        <button type="button" class="pd-del is-hidden" aria-label="Hapus plat">&times;</button>
-                    </div>
-                </div>
+    <input type="text" name="plates[]" placeholder="B 1234 ABC" autocomplete="off" required>
+    <input type="hidden" name="vehicle_types[]" value="mobil">
+    <button type="button" class="pd-del is-hidden" aria-label="Hapus plat">&times;</button>
+</div>
 
                 <button type="button" class="pd-add" id="btnAddPlate">+ Tambah kendaraan</button>
                 @error('plates.*') <div class="err">{{ $message }}</div> @enderror
@@ -415,13 +432,10 @@
     document.getElementById('btnAddPlate').addEventListener('click', () => {
         const row = document.createElement('div');
         row.className = 'pd-plate';
-        row.innerHTML = `
-            <input type="text" name="plates[]" placeholder="B 1234 ABC" autocomplete="off">
-            <select name="vehicle_types[]" aria-label="Jenis kendaraan">
-                <option value="mobil">Mobil</option>
-                <option value="motor">Motor</option>
-            </select>
-            <button type="button" class="pd-del" aria-label="Hapus plat">&times;</button>`;
+       row.innerHTML = `
+    <input type="text" name="plates[]" placeholder="B 1234 ABC" autocomplete="off">
+    <input type="hidden" name="vehicle_types[]" value="mobil">
+    <button type="button" class="pd-del" aria-label="Hapus plat">&times;</button>`;
         plateList.appendChild(row);
         syncDeleteButtons();
         row.querySelector('input').focus();
@@ -470,6 +484,20 @@
             if (!row.querySelector('input').value.trim()) return;
             jumlah[row.querySelector('select').value === 'motor' ? 'motor' : 'mobil']++;
         });
+
+        // Peringatan slot: jumlah kendaraan yang diisi dibanding sisa slot
+        const slotWarn = document.getElementById('slotWarn');
+        if (slotWarn) {
+            const kurang = [];
+            document.querySelectorAll('#pdSlots [data-jenis]').forEach(el => {
+                const sisa = Number(el.dataset.sisa);
+                if (jumlah[el.dataset.jenis] > sisa) {
+                    kurang.push(el.dataset.jenis + (sisa === 0 ? ' penuh' : ' tersisa ' + sisa));
+                }
+            });
+            slotWarn.hidden = kurang.length === 0;
+            slotWarn.textContent = kurang.length ? 'Slot tidak cukup: ' + kurang.join(', ') + '.' : '';
+        }
 
         const bagian = [];
         if (jumlah.mobil) bagian.push(jumlah.mobil + ' mobil \u00d7 ' + rupiah(harga.mobil));
